@@ -1,4 +1,4 @@
-package main
+package union
 
 import (
 	"fmt"
@@ -6,22 +6,22 @@ import (
 )
 
 func TestUnion(t *testing.T) {
-	type Big struct {
-		c1 	complex128
+	type big struct {
+		i 	int32
 		b 	bool
 		c2 	complex128
 	}
 
-	type Test struct {
+	type test struct {
 		b 	bool
 		I 	int64
-		f 	float64
+		f 	float32
 		c	complex128
-		s 	Big
+		s 	big
 	}
 
-	
-	union := NewUnion(Test{})
+
+	union := NewUnion(test{})
 	if union == nil {
 		return
 	}
@@ -30,5 +30,5 @@ func TestUnion(t *testing.T) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(union.Get("f"))
+	fmt.Println(union.Get("s"))
 }
