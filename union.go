@@ -3,6 +3,7 @@ package union
 
 import (
 	"errors"
+	//"fmt"
 	"reflect"
 	"unsafe"
 )
@@ -17,28 +18,14 @@ type Union struct {
 // NewUnion creates a new union using the maximum sized field in the struct. 
 // If the given interface is not a struct, the function will return nil.
 //
-// The union will work on simple data types such as numbers. The union
-// can handle 1 layer of nested structs also composed of simple
-// data types. Other data types such as pointers, slices, channels,
-// functions, arrays, maps, and so on are untested and probably
-// will not work that well. Nesting additional structs will probably
-// not work either.
+// The union has been confirmed to work on the following data types:
+// numbers, booleans, arrays, structs (can be nested)
+// 
+// The following data types do not work due to the way go's types work:
+// slices, strings
 //
-// Nesting structs:
-//
-// The following should work:
-// type nested struct {
-//     i int32
-//     f float64
-// }
-//
-// type unionable struct {
-//     c complex 128
-//     s nested
-// }
-//
-// However, adding additional structs to the definition of 'nested'
-// will likely not work well.
+// The following data types have not been tested:
+// maps, (unsafe) pointers, channels, functions, interfaces
 func NewUnion(strct interface{}) (*Union) {
 	t := reflect.TypeOf(strct)
 	if t.Kind() != reflect.Struct {
@@ -68,7 +55,7 @@ func (u *Union) Get(f string) interface{} {
 	}
 	
 	ptr := reflect.NewAt(field.Type(), unsafe.Pointer(&u.data[0]))
-	return reflect.Indirect(ptr)
+	return reflect.Indirect(ptr).Interface()
 }
 
 // Set sets the union data according the the field type and data specified.
@@ -90,14 +77,10 @@ func (u *Union) Set(f string, i interface{}) error {
 
 	field.Set(reflect.Indirect(v))
 	addr := unsafe.Pointer(field.UnsafeAddr())
-
-	for i := uintptr(0); i < uintptr(len(u.data)); i++ {
-		if i < v.Type().Size() {
-			b := unsafe.Pointer(uintptr(addr) + i*unsafe.Sizeof(u.data[0]))
-			u.data[i] = *(*byte)(b)
-		} else {
-			u.data[i] = 0
-		}
+	
+	for i := uintptr(0); i < v.Type().Size(); i++ {
+		b := unsafe.Pointer(uintptr(addr) + i*unsafe.Sizeof(u.data[0]))
+		u.data[i] = *(*byte)(b)
 	}
 	
 	return nil
