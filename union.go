@@ -12,7 +12,7 @@ import (
 // the struct used to initialize it
 type Union struct {
 	data 	[]byte
-	strct 	interface{}
+	t 		reflect.Type
 }
 
 // NewUnion creates a new union using the maximum sized field in the struct. 
@@ -26,8 +26,8 @@ type Union struct {
 //
 // The following data types have not been tested:
 // maps, (unsafe) pointers, channels, functions, interfaces
-func NewUnion(strct interface{}) (*Union) {
-	t := reflect.TypeOf(strct)
+func NewUnion(s interface{}) (*Union) {
+	t := reflect.TypeOf(s)
 	if t.Kind() != reflect.Struct {
 		return nil
 	}
@@ -39,7 +39,7 @@ func NewUnion(strct interface{}) (*Union) {
 		}
 	}
 
-	return &Union{make([]byte, maxSize, maxSize), strct}
+	return &Union{make([]byte, maxSize, maxSize), t}
 }
 
 //  Get returns an interface containing the value associated with the
@@ -48,7 +48,7 @@ func NewUnion(strct interface{}) (*Union) {
 // be the name of the field in the struct definition, case sensitive.
 // If f is not a valid field, Get returns nil.
 func (u *Union) Get(f string) interface{} {
-	v := reflect.ValueOf(u.strct)
+	v := reflect.New(u.t).Elem()
 	field := v.FieldByName(f)
 	if !field.IsValid() {
 		return nil
@@ -64,8 +64,7 @@ func (u *Union) Get(f string) interface{} {
 // or the type does not match the type of i, an error will be returned.
 // Additionally, Set will panic if called on an unexported struct field.
 func (u *Union) Set(f string, i interface{}) error {
-	tmp := reflect.ValueOf(u.strct)
-	s := reflect.New(tmp.Type()).Elem()
+	s := reflect.New(u.t).Elem()
 	v := reflect.ValueOf(i)
 
 	field := s.FieldByName(f)
